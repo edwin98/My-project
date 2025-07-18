@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Unity WebGL</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #unityContainer { width: 100vw; height: 100vh; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <div id="unityContainer"></div>
+    <script>
+        var buildUrl = "Build";
+        var config = {
+            dataUrl: buildUrl + "/YourBuild.data",
+            frameworkUrl: buildUrl + "/YourBuild.framework.js",
+            codeUrl: buildUrl + "/YourBuild.wasm",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "Your Company",
+            productName: "Your Product",
+            productVersion: "1.0",
+            showBanner: function (message, type) { }
+        };
+
+        var container = document.querySelector("#unityContainer");
+        var canvas = document.createElement("canvas");
+        container.appendChild(canvas);
+
+        var unityInstance = UnityLoader.instantiate(canvas, config, function (progress) {
+            if (progress === 1) {
+                // Optionally handle onProgress
+            }
+        });
+
+        window.addEventListener('resize', function () {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        window.dispatchEvent(new Event('resize')); // Trigger resize event to adjust size
+    </script>
+</body>
+</html>

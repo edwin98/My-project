@@ -1,0 +1,40 @@
+{
+  "series": [
+    {
+      "name": "钻压",
+      "display": true,
+      "data": [
+        {
+          "key": "0.0m",
+          "value": 5820.0
+        }
+      ]
+    },
+    {
+      "name": "扭矩",
+      "display": true,
+      "data": [
+        {
+          "key": "0.0m",
+          "value": 215.0
+        }
+      ]
+    },
+    {
+      "name": "转速",
+      "display": true,
+      "data": [
+        {
+          "key": "0.0m",
+          "value": 112.0
+        }
+      ]
+    }
+  ],
+  "xAxis": {
+    "title": "深度 (m)",
+    "label": [
+      "0.0m"
+    ]
+  }
+}

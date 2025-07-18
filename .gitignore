@@ -1,0 +1,222 @@
+# =============================================================================
+# Unity钻井轨迹三维可视化系统 (DrillViz3D) - 精简Git配置
+# =============================================================================
+
+# =============================================================================
+# Unity标准生成文件
+# =============================================================================
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+[Uu]serSettings/
+
+# Unity自动生成
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.apk
+*.unitypackage
+*.aab
+sysinfo.txt
+
+# Asset Store工具
+[Aa]ssets/AssetStoreTools*
+[Aa]ssets/Plugins/Editor/JetBrains*
+
+# =============================================================================
+# 🚨 大文件排除 - 主要问题源
+# =============================================================================
+
+# Unity大场景文件 (50MB+)
+Assets/Scenes/煤岩*.unity
+Assets/Scenes/随钻*.unity
+Assets/Scenes/钻机*.unity
+Assets/Scenes/隐蔽*.unity
+Assets/Scenes/工程*.unity
+Assets/Scenes/统计*.unity
+Assets/Scenes/工作*.unity
+Assets/Scenes/lizi.unity
+Assets/Scenes/首页.unity
+Assets/Scenes/*/
+
+# 3D模型文件 (5-10MB)
+*.fbx
+*.FBX
+*.obj
+*.OBJ
+*.blend*
+*.max
+*.maya
+*.ma
+*.mb
+*.3ds
+*.dae
+*.x3d
+*.ply
+*.stl
+Assets/model/
+Assets/Models/
+Assets/Meshes/
+
+# 纹理和图像文件
+*.psd
+*.psb
+*.tga
+*.tiff
+*.tif
+*.exr
+*.hdr
+Assets/textures/
+Assets/Textures/
+Assets/Image/SlideShow/
+Assets/Image/底部图标/
+Assets/水.jpg
+Assets/hl0000.png
+
+# 插件和第三方库
+*.rar
+*.zip
+*.7z
+Assets/Plugins/Newtonsoft.Json.dll
+Assets/Plugins/MySql.Data.dll
+Assets/Plugins/XCharts-master/
+Assets/Plugins/NPOI/
+Assets/TextMesh Pro/Examples & Extras/
+Assets/TextMesh Pro/Documentation/
+
+# 音视频文件
+*.mp4
+*.mov
+*.avi
+*.wmv
+*.flv
+*.webm
+*.mkv
+*.wav
+*.mp3
+*.ogg
+*.aiff
+*.aif
+*.m4a
+
+# 字体文件 (20-100MB)
+*.ttc
+*.otf
+Assets/Fonts/*.ttc
+Assets/TextMesh Pro/Fonts/*.ttf
+
+# 数据文件
+*.xlsx
+*.xls
+Assets/Data/
+Assets/StreamingAssets/chartsdata/
+Assets/word/
+
+# =============================================================================
+# Unity开发环境
+# =============================================================================
+
+# Visual Studio
+.vs/
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+
+# IDE
+.idea/
+.vscode/
+
+# Package Manager
+[Pp]ackages/
+PackageCache/
+manifest.json
+packages-lock.json
+
+# Unity其他
+ucb_config.json
+.plastic/
+*.playable
+
+# =============================================================================
+# 系统和缓存文件
+# =============================================================================
+
+# 光照和渲染缓存
+LightingData.asset
+Lightmap*.exr
+ReflectionProbe*.exr
+ShaderCache/
+BurstCache/
+
+# 构建输出
+WebGLBuild/
+AndroidBuild/
+iOSBuild/
+DrillingDataProcessor/bin/
+DrillingDataProcessor/obj/
+
+# 操作系统
+.DS_Store*
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.lnk
+*~
+
+# 临时文件
+*.cache
+*.log
+*.backup
+*.bak
+index.html.backup
+fmod_editor.log
+UnityMergeSettings.txt
+/unityProject.json
+TestResults/
+Documentation~/
+
+# =============================================================================
+# 强制包含重要文件
+# =============================================================================
+!*.cs
+!*.js
+!*.md
+!*.txt
+!ProjectSettings/
+!Assets/Scripts/
+!Assets/Settings/
+!*.mat
+!*.prefab
+!*.asset
+
+# 保留小测试场景
+!Assets/Scenes/SampleScene.*
+!Assets/Scenes/gys-demo.*
+!Assets/Scenes/表格.*
+
+# 保留小图标和重要数据
+!Assets/UI/*.png
+!Assets/Image/img/*.png
+!Assets/StreamingAssets/trajectory_data.json
+!Assets/StreamingAssets/spatial_fpi_visualization.json
+
+# =============================================================================
+# 优化说明：仓库大小从GB级降至MB级，仅保留核心代码和配置
+# ============================================================================= 

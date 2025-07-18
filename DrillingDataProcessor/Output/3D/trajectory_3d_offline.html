@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang='zh-CN'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>钻孔轨迹三维可视化 - 离线版本</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            font-family: Arial, sans-serif; 
+            background: #111; 
+        }
+        #container { 
+            width: 100vw; 
+            height: 100vh; 
+            position: relative; 
+        }
+        #info { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            color: white; 
+            background: rgba(0,0,0,0.7); 
+            padding: 15px; 
+            border-radius: 5px; 
+            font-size: 14px;
+            max-width: 250px;
+        }
+        #controls { 
+            position: absolute; 
+            top: 10px; 
+            right: 10px; 
+            color: white; 
+            background: rgba(0,0,0,0.7); 
+            padding: 15px; 
+            border-radius: 5px; 
+        }
+        button { 
+            margin: 2px; 
+            padding: 8px 12px; 
+            background: #444; 
+            color: white; 
+            border: none; 
+            border-radius: 3px; 
+            cursor: pointer; 
+            display: block;
+            width: 120px;
+        }
+        button:hover { background: #666; }
+        button.active { background: #0a84ff; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <div id='container'>
+        <div id='info'>
+            <h3>钻孔轨迹三维可视化</h3>
+            <p>轨迹点数: <span id='pointCount'>39</span></p>
+            <p>深度范围: <span id='depthRange'>0-52.3m</span></p>
+            <p>最大E位移: 49.2m</p>
+            <p>轨迹总长度: 57.0m</p>
+            <div id='fpiStats' style='margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;'></div>
+        </div>
+        <div id='controls'>
+            <button onclick='resetView()'>重置视角</button>
+            <button onclick='togglePoints()' id='pointsBtn' class='active'>显示轨迹点</button>
+            <button onclick='toggleLines()' id='linesBtn' class='active'>显示轨迹线</button>
+            <button onclick='toggleAxis()' id='axisBtn' class='active'>显示坐标轴</button>
+            <button onclick='changeColorScheme()' id='colorBtn'>深度着色</button>
+            <button onclick='exportData()'>导出数据</button>
+        </div>
+    </div>
+
+    <script>
+        // 轨迹数据
+        const trajectoryData = [{"x":0.0,"y":0.0,"z":-0.0,"depth":0.0,"inc":34.04,"azi":81.53,"fpi":2221415.5,"ucs":6833074.0,"pointIndex":0,"markTime":"2025-04-10 17:52:51","gravity":0.998},{"x":1.2431813,"y":-0.054169677,"z":-1.2443609,"depth":1.5,"inc":33.85,"azi":103.46,"fpi":21413620.0,"ucs":65868296.0,"pointIndex":1,"markTime":"2025-04-10 17:58:26","gravity":0.998},{"x":2.4590437,"y":-0.34225973,"z":-2.4938877,"depth":3.0,"inc":33.33,"azi":103.2,"fpi":2658373.8,"ucs":8177157.5,"pointIndex":2,"markTime":"2025-04-10 18:05:00","gravity":0.998},{"x":3.6838088,"y":-0.62828577,"z":-3.7516081,"depth":4.5,"inc":32.71,"azi":103.09,"fpi":18917016.0,"ucs":58188740.0,"pointIndex":3,"markTime":"2025-04-10 18:09:42","gravity":0.999},{"x":4.9188657,"y":-0.91773844,"z":-5.02013,"depth":6.0,"inc":31.8,"azi":103.29,"fpi":4133048.2,"ucs":12713256.0,"pointIndex":4,"markTime":"2025-04-10 18:23:18","gravity":0.998},{"x":6.1614394,"y":-1.2127303,"z":-6.2972403,"depth":7.5,"inc":31.47,"azi":103.42,"fpi":18390726.0,"ucs":56569870.0,"pointIndex":5,"markTime":"2025-04-10 18:29:56","gravity":0.999},{"x":7.411142,"y":-1.5083779,"z":-7.581438,"depth":9.0,"inc":30.76,"azi":103.2,"fpi":15338230.0,"ucs":47180396.0,"pointIndex":6,"markTime":"2025-04-10 18:36:03","gravity":0.998},{"x":8.662022,"y":-1.8216488,"z":-8.870949,"depth":10.5,"inc":30.68,"azi":104.92,"fpi":43105176.0,"ucs":132591520.0,"pointIndex":7,"markTime":"2025-04-10 18:51:45","gravity":1.0},{"x":9.910953,"y":-2.149766,"z":-10.162262,"depth":12.0,"inc":30.49,"azi":104.52,"fpi":3313402.0,"ucs":10192024.0,"pointIndex":8,"markTime":"2025-04-10 18:59:03","gravity":0.999},{"x":11.166589,"y":-2.4850383,"z":-11.461888,"depth":13.5,"inc":29.42,"azi":105.38,"fpi":18090996.0,"ucs":55647904.0,"pointIndex":9,"markTime":"2025-04-10 19:05:37","gravity":1.0},{"x":12.443582,"y":-2.7950373,"z":-12.7759695,"depth":15.0,"inc":28.24,"azi":101.91,"fpi":3396545.8,"ucs":10447775.0,"pointIndex":10,"markTime":"2025-04-10 19:11:34","gravity":1.0},{"x":13.742507,"y":-3.0626137,"z":-14.102169,"depth":16.5,"inc":27.47,"azi":101.37,"fpi":25181488.0,"ucs":77458260.0,"pointIndex":11,"markTime":"2025-04-10 19:17:40","gravity":0.999},{"x":15.053563,"y":-3.3175762,"z":-15.437786,"depth":18.0,"inc":26.68,"azi":100.64,"fpi":3443898.5,"ucs":10593432.0,"pointIndex":12,"markTime":"2025-04-10 19:23:05","gravity":0.999},{"x":15.176794,"y":-4.657404,"z":-16.783268,"depth":19.5,"inc":25.79,"azi":248.85,"fpi":28128530.0,"ucs":86523360.0,"pointIndex":13,"markTime":"2025-04-10 19:29:27","gravity":0.999},{"x":15.31662,"y":-6.004721,"z":-18.137821,"depth":21.0,"inc":25.09,"azi":99.3,"fpi":3380446.2,"ucs":10398253.0,"pointIndex":14,"markTime":"2025-04-10 19:36:16","gravity":1.0},{"x":16.65779,"y":-6.2500253,"z":-19.50124,"depth":22.5,"inc":24.19,"azi":101.43,"fpi":30987166.0,"ucs":95316520.0,"pointIndex":15,"markTime":"2025-04-10 19:43:02","gravity":1.0},{"x":18.002205,"y":-6.5024757,"z":-20.869152,"depth":24.0,"inc":24.26,"azi":99.84,"fpi":9045009.0,"ucs":27822448.0,"pointIndex":16,"markTime":"2025-04-10 19:52:50","gravity":0.999},{"x":19.351452,"y":-6.7350464,"z":-22.238297,"depth":25.5,"inc":23.96,"azi":99.72,"fpi":32380206.0,"ucs":99601510.0,"pointIndex":17,"markTime":"2025-04-10 20:03:27","gravity":0.999},{"x":20.706652,"y":-6.9623156,"z":-23.612421,"depth":27.0,"inc":23.32,"azi":99.32,"fpi":3292329.2,"ucs":10127205.0,"pointIndex":18,"markTime":"2025-04-10 20:11:01","gravity":0.999},{"x":22.068222,"y":-7.2004375,"z":-24.994658,"depth":28.5,"inc":22.39,"azi":100.52,"fpi":27016862.0,"ucs":83103864.0,"pointIndex":19,"markTime":"2025-04-10 20:17:48","gravity":1.0},{"x":23.439283,"y":-7.4317203,"z":-26.38509,"depth":30.0,"inc":21.68,"azi":98.63,"fpi":4529766.5,"ucs":13933562.0,"pointIndex":20,"markTime":"2025-04-10 20:24:30","gravity":1.0},{"x":24.821474,"y":-7.6363173,"z":-27.782341,"depth":31.5,"inc":20.98,"azi":98.21,"fpi":24961540.0,"ucs":76781700.0,"pointIndex":21,"markTime":"2025-04-10 20:31:44","gravity":0.999},{"x":26.211048,"y":-7.839282,"z":-29.18666,"depth":33.0,"inc":20.17,"azi":98.41,"fpi":4176945.0,"ucs":12848283.0,"pointIndex":22,"markTime":"2025-04-10 20:38:11","gravity":0.998},{"x":27.608421,"y":-8.038158,"z":-30.598114,"depth":34.5,"inc":19.4,"azi":97.79,"fpi":27844486.0,"ucs":85649640.0,"pointIndex":23,"markTime":"2025-04-10 20:45:31","gravity":0.999},{"x":29.014938,"y":-8.229452,"z":-32.017582,"depth":36.0,"inc":18.32,"azi":97.7,"fpi":6397297.0,"ucs":19678086.0,"pointIndex":24,"markTime":"2025-04-10 20:54:05","gravity":0.998},{"x":30.430414,"y":-8.415677,"z":-33.445255,"depth":37.5,"inc":17.41,"azi":97.29,"fpi":5201353.5,"ucs":15999363.0,"pointIndex":25,"markTime":"2025-04-10 21:00:27","gravity":0.999},{"x":31.849083,"y":-8.604086,"z":-34.87638,"depth":39.0,"inc":17.45,"azi":97.84,"fpi":8311294.0,"ucs":25565540.0,"pointIndex":26,"markTime":"2025-04-12 19:53:48","gravity":0.998},{"x":33.268654,"y":-8.809408,"z":-36.310722,"depth":40.5,"inc":16.58,"azi":98.62,"fpi":42155904.0,"ucs":129671560.0,"pointIndex":27,"markTime":"2025-04-12 20:04:16","gravity":0.999},{"x":34.696632,"y":-8.997912,"z":-37.75109,"depth":42.0,"inc":15.84,"azi":96.42,"fpi":2161930.5,"ucs":6650098.0,"pointIndex":28,"markTime":"2025-04-12 20:12:39","gravity":0.999},{"x":36.131466,"y":-9.161645,"z":-39.195236,"depth":43.5,"inc":15.53,"azi":96.6,"fpi":44181030.0,"ucs":135900850.0,"pointIndex":29,"markTime":"2025-04-12 20:19:55","gravity":0.998},{"x":37.56637,"y":-9.343552,"z":-40.64162,"depth":45.0,"inc":15.2,"azi":97.85,"fpi":3226933.8,"ucs":9926048.0,"pointIndex":30,"markTime":"2025-04-12 20:25:25","gravity":0.999},{"x":39.006817,"y":-9.511746,"z":-42.091854,"depth":46.5,"inc":14.4,"azi":95.47,"fpi":33207520.0,"ucs":102146330.0,"pointIndex":31,"markTime":"2025-04-12 20:32:29","gravity":1.0},{"x":40.452286,"y":-9.666095,"z":-43.54554,"depth":48.0,"inc":14.15,"azi":96.72,"fpi":3329740.2,"ucs":10242281.0,"pointIndex":32,"markTime":"2025-04-12 20:40:04","gravity":1.0},{"x":41.901665,"y":-9.815362,"z":-45.002583,"depth":49.5,"inc":13.34,"azi":95.04,"fpi":34384164.0,"ucs":105765690.0,"pointIndex":33,"markTime":"2025-04-12 20:47:32","gravity":0.999},{"x":43.357742,"y":-9.941088,"z":-46.464077,"depth":51.0,"inc":12.68,"azi":94.83,"fpi":3006972.0,"ucs":9249446.0,"pointIndex":34,"markTime":"2025-04-12 20:55:21","gravity":0.999},{"x":44.817364,"y":-10.083048,"z":-47.930588,"depth":52.5,"inc":11.58,"azi":96.28,"fpi":32060788.0,"ucs":98618984.0,"pointIndex":35,"markTime":"2025-04-12 21:03:04","gravity":0.998},{"x":46.281498,"y":-10.217583,"z":-49.40089,"depth":54.0,"inc":11.26,"azi":94.22,"fpi":5255918.0,"ucs":16167204.0,"pointIndex":36,"markTime":"2025-04-12 21:14:46","gravity":0.999},{"x":47.75036,"y":-10.323001,"z":-50.87353,"depth":55.5,"inc":10.66,"azi":93.99,"fpi":33767012.0,"ucs":103867330.0,"pointIndex":37,"markTime":"2025-04-12 21:23:04","gravity":0.999},{"x":49.220108,"y":-10.441255,"z":-52.34803,"depth":57.0,"inc":10.5,"azi":95.21,"fpi":0.0,"ucs":0.0,"pointIndex":38,"markTime":"2025-04-12 21:28:49","gravity":0.999}];
+        
+        // 3D可视化代码（简化版Canvas实现）
+        let canvas, ctx;
+        let camera = {x: 25, y: -5, z: -25};
+        let showPoints = true, showLines = true, showAxis = true;
+        let colorScheme = 'depth';
+        let isDragging = false, lastMouseX = 0, lastMouseY = 0;
+
+        function init() {
+            canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.display = 'block';
+            document.getElementById('container').appendChild(canvas);
+            
+            ctx = canvas.getContext('2d');
+            
+            // 添加鼠标事件
+            canvas.addEventListener('mousedown', onMouseDown);
+            canvas.addEventListener('mousemove', onMouseMove);
+            canvas.addEventListener('mouseup', onMouseUp);
+            canvas.addEventListener('wheel', onWheel);
+            window.addEventListener('resize', onResize);
+            
+            // 计算和显示FPI/UCS统计信息
+            updateFpiStats();
+            
+            render();
+        }
+
+        function updateFpiStats() {
+            const validFpiData = trajectoryData.filter(p => !isNaN(p.fpi));
+            const validUcsData = trajectoryData.filter(p => !isNaN(p.ucs));
+            
+            let statsHtml = '<h4>FPI/UCS统计</h4>';
+            
+            if (validFpiData.length > 0) {
+                const avgFpi = validFpiData.reduce((sum, p) => sum + p.fpi, 0) / validFpiData.length;
+                const maxFpi = Math.max(...validFpiData.map(p => p.fpi));
+                const minFpi = Math.min(...validFpiData.map(p => p.fpi));
+                
+                statsHtml += `<p>FPI有效点: ${validFpiData.length}</p>`;
+                statsHtml += `<p>FPI平均: ${avgFpi.toFixed(2)}</p>`;
+                statsHtml += `<p>FPI范围: ${minFpi.toFixed(2)} - ${maxFpi.toFixed(2)}</p>`;
+            } else {
+                statsHtml += '<p>FPI: 无数据</p>';
+            }
+            
+            if (validUcsData.length > 0) {
+                const avgUcs = validUcsData.reduce((sum, p) => sum + p.ucs, 0) / validUcsData.length;
+                const maxUcs = Math.max(...validUcsData.map(p => p.ucs));
+                const minUcs = Math.min(...validUcsData.map(p => p.ucs));
+                
+                statsHtml += `<p>UCS有效点: ${validUcsData.length}</p>`;
+                statsHtml += `<p>UCS平均: ${avgUcs.toFixed(2)} MPa</p>`;
+                statsHtml += `<p>UCS范围: ${minUcs.toFixed(2)} - ${maxUcs.toFixed(2)} MPa</p>`;
+            } else {
+                statsHtml += '<p>UCS: 无数据</p>';
+            }
+            
+            document.getElementById('fpiStats').innerHTML = statsHtml;
+        }
+
+        function project3D(x, y, z) {
+            const distance = 100;
+            const scale = distance / (distance + z + 100);
+            return {
+                x: (x - camera.x) * scale + canvas.width / 2,
+                y: (y - camera.y) * scale + canvas.height / 2,
+                scale: scale
+            };
+        }
+
+        function getColor(value, scheme) {
+            switch(scheme) {
+                case 'depth':
+                    const r = Math.floor(255 * value);
+                    const g = Math.floor(255 * (1 - value));
+                    return `rgb(${r}, ${g}, 100)`;
+                default:
+                    return `hsl(${360 * value}, 100%, 50%)`;
+            }
+        }
+
+        function render() {
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制坐标轴
+            if (showAxis) {
+                drawAxes();
+            }
+
+            // 绘制轨迹线
+            if (showLines) {
+                drawTrajectoryLine();
+            }
+
+            // 绘制轨迹点
+            if (showPoints) {
+                drawTrajectoryPoints();
+            }
+        }
+
+        function drawAxes() {
+            const origin = project3D(0, 0, 0);
+            const xAxis = project3D(20, 0, 0);
+            const yAxis = project3D(0, 20, 0);
+            const zAxis = project3D(0, 0, -20);
+
+            // X轴 - 红色
+            ctx.strokeStyle = '#ff4444';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(origin.x, origin.y);
+            ctx.lineTo(xAxis.x, xAxis.y);
+            ctx.stroke();
+            
+            // Y轴 - 绿色
+            ctx.strokeStyle = '#44ff44';
+            ctx.beginPath();
+            ctx.moveTo(origin.x, origin.y);
+            ctx.lineTo(yAxis.x, yAxis.y);
+            ctx.stroke();
+
+            // Z轴 - 蓝色
+            ctx.strokeStyle = '#4444ff';
+            ctx.beginPath();
+            ctx.moveTo(origin.x, origin.y);
+            ctx.lineTo(zAxis.x, zAxis.y);
+            ctx.stroke();
+
+            // 坐标轴标签
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('X(E)', xAxis.x + 5, xAxis.y);
+            ctx.fillText('Y(N)', yAxis.x + 5, yAxis.y);
+            ctx.fillText('Z(深度)', zAxis.x + 5, zAxis.y);
+        }
+
+        function drawTrajectoryLine() {
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            for (let i = 0; i < trajectoryData.length; i++) {
+                const point = trajectoryData[i];
+                const projected = project3D(point.x, point.y, point.z);
+                
+                if (i === 0) {
+                    ctx.moveTo(projected.x, projected.y);
+                } else {
+                    ctx.lineTo(projected.x, projected.y);
+                }
+            }
+            ctx.stroke();
+        }
+
+        function drawTrajectoryPoints() {
+            for (let i = 0; i < trajectoryData.length; i++) {
+                const point = trajectoryData[i];
+                const projected = project3D(point.x, point.y, point.z);
+                const value = i / (trajectoryData.length - 1);
+                
+                ctx.fillStyle = getColor(value, colorScheme);
+                ctx.beginPath();
+                ctx.arc(projected.x, projected.y, 4 * projected.scale, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 点标签
+                if (i % 5 === 0) {
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '10px Arial';
+                    ctx.fillText(`${point.depth.toFixed(1)}m`, projected.x + 5, projected.y - 5);
+                }
+            }
+        }
+
+        // 鼠标事件处理
+        function onMouseDown(e) {
+            // 检查是否点击到轨迹点
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            let clickedPoint = null;
+            let minDistance = 20; // 点击检测范围
+            
+            for (let i = 0; i < trajectoryData.length; i++) {
+                const point = trajectoryData[i];
+                const projected = project3D(point.x, point.y, point.z);
+                const distance = Math.sqrt(Math.pow(mouseX - projected.x, 2) + Math.pow(mouseY - projected.y, 2));
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    clickedPoint = { data: point, index: i };
+                }
+            }
+            
+            if (clickedPoint) {
+                // 显示轨迹点信息
+                showPointInfo(clickedPoint.data, clickedPoint.index);
+            } else {
+                // 开始拖拽
+                isDragging = true;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+        }
+
+        function showPointInfo(point, index) {
+            let info = `轨迹点 ${index}:\\n`;
+            info += `深度: ${point.depth.toFixed(1)}m\\n`;
+            info += `倾角: ${point.inc.toFixed(1)}°\\n`;
+            info += `方位角: ${point.azi.toFixed(1)}°\\n`;
+            info += `坐标: (${point.x.toFixed(2)}, ${point.y.toFixed(2)}, ${point.z.toFixed(2)})\\n`;
+            
+            if (!isNaN(point.fpi)) {
+                info += `FPI: ${point.fpi.toFixed(2)}\\n`;
+            }
+            
+            if (!isNaN(point.ucs)) {
+                info += `UCS: ${point.ucs.toFixed(2)} MPa\\n`;
+            }
+            
+            if (point.markTime) {
+                info += `标记时间: ${point.markTime}\\n`;
+            }
+            
+            if (!isNaN(point.gravity)) {
+                info += `重力和: ${point.gravity.toFixed(3)}`;
+            }
+            
+            alert(info);
+        }
+
+        function onMouseMove(e) {
+            if (isDragging) {
+                const deltaX = e.clientX - lastMouseX;
+                const deltaY = e.clientY - lastMouseY;
+                
+                camera.x += deltaX * 0.1;
+                camera.y += deltaY * 0.1;
+                
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                render();
+            }
+        }
+
+        function onMouseUp(e) {
+            isDragging = false;
+        }
+
+        function onWheel(e) {
+            camera.z += e.deltaY * 0.01;
+            render();
+        }
+
+        function onResize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            render();
+        }
+
+        // 控制函数
+        function resetView() {
+            camera = {x: 25, y: -5, z: -25};
+            render();
+        }
+
+        function togglePoints() {
+            showPoints = !showPoints;
+            const btn = document.getElementById('pointsBtn');
+            btn.classList.toggle('active');
+            btn.textContent = showPoints ? '隐藏轨迹点' : '显示轨迹点';
+            render();
+        }
+
+        function toggleLines() {
+            showLines = !showLines;
+            const btn = document.getElementById('linesBtn');
+            btn.classList.toggle('active');
+            btn.textContent = showLines ? '隐藏轨迹线' : '显示轨迹线';
+            render();
+        }
+
+        function toggleAxis() {
+            showAxis = !showAxis;
+            const btn = document.getElementById('axisBtn');
+            btn.classList.toggle('active');
+            btn.textContent = showAxis ? '隐藏坐标轴' : '显示坐标轴';
+            render();
+        }
+
+        function changeColorScheme() {
+            const schemes = ['depth', 'inclination', 'azimuth'];
+            const currentIndex = schemes.indexOf(colorScheme);
+            colorScheme = schemes[(currentIndex + 1) % schemes.length];
+            
+            const schemeNames = { depth: '深度着色', inclination: '倾角着色', azimuth: '方位着色' };
+            document.getElementById('colorBtn').textContent = schemeNames[colorScheme];
+            render();
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(trajectoryData, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'trajectory_data.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 初始化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

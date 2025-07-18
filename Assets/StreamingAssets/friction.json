@@ -1,0 +1,108 @@
+{
+    "series": [
+        {
+            "name": "孔 1",
+            "display": true,
+            "data": [
+                {"key": "0m","value": 15},
+                {"key": "1m","value": 22},
+                {"key": "2m","value": 27},
+                {"key": "3m","value": 23},
+                {"key": "4m","value": 26},
+                {"key": "5m","value": 24},
+                {"key": "6m","value": 25},
+                {"key": "7m","value": 26},
+                {"key": "8m","value": 24}
+            ]
+        },
+        {
+            "name": "孔 2",
+            "display": true,
+            "data": [
+                {"key": "0m","value": 10},
+                {"key": "1m","value": 10},
+                {"key": "2m","value": 22},
+                {"key": "3m","value": 22},
+                {"key": "4m","value": 26},
+                {"key": "5m","value": 24},
+                {"key": "6m","value": 25},
+                {"key": "7m","value": 26},
+                {"key": "8m","value": 24}
+            ]
+        },
+        {
+            "name": "孔 3",
+            "display": true,
+            "data": [
+                {"key": "0m","value": 33},
+                {"key": "1m","value": 35},
+                {"key": "2m","value": 22},
+                {"key": "3m","value": 22},
+                {"key": "4m","value": 26},
+                {"key": "5m","value": 24},
+                {"key": "6m","value": 25},
+                {"key": "7m","value": 26},
+                {"key": "8m","value": 24}
+            ]
+        },
+        {
+            "name": "孔 4",
+            "display": true,
+            "data": [
+                {"key": "0m","value": 22},
+                {"key": "1m","value": 25},
+                {"key": "2m","value": 28},
+                {"key": "3m","value": 27},
+                {"key": "4m","value": 26},
+                {"key": "5m","value": 24},
+                {"key": "6m","value": 25},
+                {"key": "7m","value": 26},
+                {"key": "8m","value": 24}
+            ]
+        },
+        {
+            "name": "孔 5",
+            "display": true,
+            "data": [
+                {"key": "0m","value": 55},
+                {"key": "1m","value": 44},
+                {"key": "2m","value": 22},
+                {"key": "3m","value": 22},
+                {"key": "4m","value": 26},
+                {"key": "5m","value": 24},
+                {"key": "6m","value": 25},
+                {"key": "7m","value": 26},
+                {"key": "8m","value": 0}
+            ]
+        },
+        {
+            "name": "孔 6",
+            "display": true,
+            "data": [
+                {"key": "0m","value": 1},
+                {"key": "1m","value": 13},
+                {"key": "2m","value": 25},
+                {"key": "3m","value": 55},
+                {"key": "4m","value": 26},
+                {"key": "5m","value": 24},
+                {"key": "6m","value": 4},
+                {"key": "7m","value": 5},
+                {"key": "8m","value": 55}
+            ]
+        }
+    ],
+    "xAxis": {
+        "title": "时间",
+        "label": [
+            "0m",
+            "1m",
+            "2m",
+            "3m",
+            "4m",
+            "5m",
+            "6m",
+            "7m",
+            "8m"
+        ]
+    }
+}
