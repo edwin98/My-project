@@ -1,4 +1,4 @@
-# Unity三维轨迹可视化集成指南
+echo $env:HTTP_PROXY# Unity三维轨迹可视化集成指南
 
 ## 📖 概述
 
