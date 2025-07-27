@@ -48,14 +48,14 @@ namespace DrillingDataProcessor.Core
         private IMarkDetector? markDetector;
         private ITrajectoryCalculator? trajectoryCalculator;
         private IVisualization3D? visualization3D;
-        private SpatialFPIInterpolator? spatialInterpolator;
+        private VoxelFPIInterpolator? voxelInterpolator;
         
-        // 空间插值设置
-        public bool EnableSpatialInterpolation { get; set; } = false;
-        public float SpatialResolution { get; set; } = 0.5f;
-        public float InfluenceRadius { get; set; } = 5.0f;
-        public int MinNeighborPoints { get; set; } = 3;
-        public float BoundaryExpansion { get; set; } = 2.0f;
+        // 体素插值设置（默认插值方式）
+        public bool EnableVoxelInterpolation { get; set; } = true;
+        public float VoxelSize { get; set; } = 2.0f;
+        public float VoxelInfluenceRadius { get; set; } = 15.0f;
+        public int VoxelMinNeighborPoints { get; set; } = 1;
+        public float VoxelBoundaryExpansion { get; set; } = 5.0f;
         
         // 事件
         public event Action<string>? OnLogMessage;
@@ -138,11 +138,11 @@ namespace DrillingDataProcessor.Core
                     LogMessage($"三维可视化生成完成: {stopwatch.ElapsedMilliseconds}ms");
                 }
                 
-                // 9. 空间FPI插值（可选）
-                if (EnableSpatialInterpolation && trajectoryPoints.Count > 0)
+                // 9. 体素FPI插值（默认启用）
+                if (EnableVoxelInterpolation && trajectoryPoints.Count > 0)
                 {
-                    PerformSpatialInterpolation();
-                    LogMessage($"空间FPI插值完成: {stopwatch.ElapsedMilliseconds}ms");
+                    PerformVoxelInterpolation();
+                    LogMessage($"体素FPI插值完成: {stopwatch.ElapsedMilliseconds}ms");
                 }
                 
                 stopwatch.Stop();
@@ -171,33 +171,35 @@ namespace DrillingDataProcessor.Core
         /// <summary>
         /// 初始化空间插值器
         /// </summary>
-        private void InitializeSpatialInterpolator()
+        private void InitializeVoxelInterpolator()
         {
-            spatialInterpolator = new SpatialFPIInterpolator
+            voxelInterpolator = new VoxelFPIInterpolator
             {
-                SpatialResolution = this.SpatialResolution,
-                InfluenceRadius = this.InfluenceRadius,
-                MinNeighborPoints = this.MinNeighborPoints,
-                BoundaryExpansion = this.BoundaryExpansion
+                VoxelSize = this.VoxelSize,
+                InfluenceRadius = this.VoxelInfluenceRadius,
+                MinNeighborPoints = this.VoxelMinNeighborPoints,
+                BoundaryExpansion = this.VoxelBoundaryExpansion,
+                FillEntireSpace = true,
+                MaxInterpolationDistance = 50.0f
             };
             
             // 订阅日志事件
-            spatialInterpolator.OnLogMessage += message => LogMessage($"[空间插值] {message}");
+            voxelInterpolator.OnLogMessage += message => LogMessage($"[体素插值] {message}");
         }
 
         /// <summary>
-        /// 执行空间FPI插值
+        /// 执行体素FPI插值（默认插值方式）
         /// </summary>
-        private void PerformSpatialInterpolation()
+        private void PerformVoxelInterpolation()
         {
             try
             {
-                LogMessage("开始执行空间FPI插值...");
+                LogMessage("开始执行体素FPI插值...");
                 
                 // 初始化插值器
-                if (spatialInterpolator == null)
+                if (voxelInterpolator == null)
                 {
-                    InitializeSpatialInterpolator();
+                    InitializeVoxelInterpolator();
                 }
                 
                 // 准备FPI数据映射
@@ -205,22 +207,22 @@ namespace DrillingDataProcessor.Core
                 
                 if (depthFPIMapping.Count == 0)
                 {
-                    LogMessage("警告: 没有有效的FPI数据，跳过空间插值");
+                    LogMessage("警告: 没有有效的FPI数据，跳过体素插值");
                     return;
                 }
                 
                 // 执行插值
-                var interpolationResult = spatialInterpolator.InterpolateFPI(trajectoryPoints, depthFPIMapping);
+                var interpolationResult = voxelInterpolator.InterpolateFPIToVoxels(trajectoryPoints, depthFPIMapping);
                 
                 // 保存插值结果
-                SaveSpatialInterpolationResults(interpolationResult);
+                SaveVoxelInterpolationResults(interpolationResult);
                 
-                LogMessage($"空间插值成功: 生成 {interpolationResult.ValidPointsCount} 个有效插值点");
+                LogMessage($"体素插值成功: 生成 {interpolationResult.ValidVoxelCount} 个有效体素");
             }
             catch (Exception ex)
             {
-                LogMessage($"空间插值失败: {ex.Message}");
-                OnException?.Invoke("空间插值过程中发生错误", ex);
+                LogMessage($"体素插值失败: {ex.Message}");
+                OnException?.Invoke("体素插值过程中发生错误", ex);
             }
         }
 
@@ -248,88 +250,29 @@ namespace DrillingDataProcessor.Core
         }
 
         /// <summary>
-        /// 保存空间插值结果
+        /// 保存体素插值结果（默认插值方式）
         /// </summary>
-        private void SaveSpatialInterpolationResults(SpatialFPIInterpolator.InterpolationResult result)
+        private void SaveVoxelInterpolationResults(VoxelFPIInterpolator.VoxelInterpolationResult result)
         {
             try
             {
-                // 确保输出目录存在
-                var interpolationOutputPath = Path.Combine(OutputPath, "SpatialInterpolation");
+                // 确保输出目录存在 - 直接保存到项目根目录的Output\VoxelInterpolation
+                var projectRoot = GetProjectRootDirectory();
+                var interpolationOutputPath = Path.Combine(projectRoot, "Output", "VoxelInterpolation");
                 Directory.CreateDirectory(interpolationOutputPath);
                 
-                // 保存详细插值结果
-                var detailResultPath = Path.Combine(interpolationOutputPath, "spatial_fpi_interpolation.json");
-                spatialInterpolator.SaveInterpolationResult(result, detailResultPath);
+                // 使用批量导出功能保存所有格式
+                voxelInterpolator.ExportAllFormats(result, interpolationOutputPath, "voxel_fpi");
                 
-                // 保存3D可视化格式
-                var visualizationPath = Path.Combine(interpolationOutputPath, "spatial_fpi_visualization.json");
-                spatialInterpolator.ExportFor3DVisualization(result, visualizationPath);
-                
-                // 保存摘要报告
-                var summaryPath = Path.Combine(interpolationOutputPath, "interpolation_summary.txt");
-                SaveInterpolationSummary(result, summaryPath);
-                
-                LogMessage($"空间插值结果已保存到: {interpolationOutputPath}");
+                LogMessage($"体素插值结果已保存到: {interpolationOutputPath}");
             }
             catch (Exception ex)
             {
-                LogMessage($"保存空间插值结果失败: {ex.Message}");
+                LogMessage($"保存体素插值结果失败: {ex.Message}");
                 throw;
             }
         }
 
-        /// <summary>
-        /// 保存插值摘要报告
-        /// </summary>
-        private void SaveInterpolationSummary(SpatialFPIInterpolator.InterpolationResult result, string filePath)
-        {
-            var report = $@"钻井数据空间FPI插值分析报告
-===============================
-
-处理时间: {result.ProcessedTime:yyyy-MM-dd HH:mm:ss}
-输入文件: {Path.GetFileName(InputExcelPath)}
-
-插值配置:
-- 空间分辨率: {SpatialResolution}m
-- 影响半径: {InfluenceRadius}m
-- 最小邻近点: {MinNeighborPoints}
-- 边界扩展: {BoundaryExpansion}m
-
-轨迹信息:
-- 轨迹点数量: {trajectoryPoints.Count}
-- 轨迹总长度: {(trajectoryPoints.Count > 0 ? trajectoryPoints.Last().RodLength : 0):F2}m
-
-空间范围:
-- X轴范围: [{result.Space.MinBounds.X:F2}, {result.Space.MaxBounds.X:F2}]m
-- Y轴范围: [{result.Space.MinBounds.Y:F2}, {result.Space.MaxBounds.Y:F2}]m
-- Z轴范围: [{result.Space.MinBounds.Z:F2}, {result.Space.MaxBounds.Z:F2}]m
-
-网格信息:
-- 网格维度: {result.Space.GetGridDimensions()}
-- 总网格点数: {result.Space.GridPoints.Count}
-- 有效插值点数: {result.ValidPointsCount}
-- 空间覆盖率: {(float)result.ValidPointsCount / result.Space.GridPoints.Count * 100:F1}%
-
-FPI分析结果:
-- 最小值: {result.MinFPI:F2}
-- 最大值: {result.MaxFPI:F2}
-- 平均值: {result.AvgFPI:F2}
-- 变异系数: {((result.MaxFPI - result.MinFPI) / result.AvgFPI * 100):F1}%
-
-数据质量评估:
-- 轨迹点密度: {(float)trajectoryPoints.Count / (trajectoryPoints.Count > 0 ? trajectoryPoints.Last().RodLength : 1):F2} 点/米
-- 插值精度: {(result.ValidPointsCount > 0 ? "良好" : "需要改进")}
-- 建议: {(result.ValidPointsCount < result.Space.GridPoints.Count * 0.5 ? "建议增加轨迹点密度或减小空间分辨率" : "插值质量良好")}
-
-输出文件:
-- 详细结果: spatial_fpi_interpolation.json
-- 可视化数据: spatial_fpi_visualization.json
-- 本报告: interpolation_summary.txt
-";
-
-            File.WriteAllText(filePath, report);
-        }
 
         /// <summary>
         /// 加载和预处理数据
@@ -717,6 +660,30 @@ FPI分析结果:
         {
             OnLogMessage?.Invoke(message);
         }
+
+        /// <summary>
+        /// 获取项目根目录路径
+        /// </summary>
+        private string GetProjectRootDirectory()
+        {
+            // 从当前执行文件位置向上查找包含.csproj文件的目录
+            string currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            DirectoryInfo? directory = new DirectoryInfo(currentDirectory);
+            
+            while (directory != null)
+            {
+                // 查找.csproj文件
+                if (directory.GetFiles("*.csproj").Length > 0)
+                {
+                    return directory.FullName;
+                }
+                
+                directory = directory.Parent;
+            }
+            
+            // 如果找不到，使用当前目录
+            return currentDirectory;
+        }
         
         private float Lerp(float a, float b, float t)
         {
@@ -891,20 +858,80 @@ FPI分析结果:
         private void SaveTrajectoryCalculated()
         {
             var csvContent = new System.Text.StringBuilder();
-            csvContent.AppendLine("序号,杆长,平均倾角,平均磁方位角,E位移,N位移,垂深,X坐标,侧向偏移,H值");
+            csvContent.AppendLine("序号,杆长,平均倾角,平均磁方位角,E位移,N位移,垂深,X坐标,侧向偏移,H值,FPI,UCS");
             
             for (int i = 0; i < trajectoryPoints.Count; i++)
             {
                 var point = trajectoryPoints[i];
+                
+                // 查找对应的FPI和UCS值
+                var depthRange = 0.5f;
+                var correspondingData = filteredData
+                    .Where(d => Math.Abs(d.Depth - point.RodLength) <= depthRange && 
+                               !float.IsNaN(d.Fpi) && !float.IsNaN(d.Ucs))
+                    .OrderBy(d => Math.Abs(d.Depth - point.RodLength))
+                    .FirstOrDefault();
+                
+                float fpiValue = correspondingData?.Fpi ?? float.NaN;
+                float ucsValue = correspondingData?.Ucs ?? float.NaN;
+                
                 csvContent.AppendLine($"{i + 1},{point.RodLength:F2},{point.AvgInclination:F3}," +
                                     $"{point.AvgMagneticAzimuth:F3},{point.EastDisplacement:F3}," +
                                     $"{point.NorthDisplacement:F3},{point.VerticalDepth:F3}," +
-                                    $"{point.XCoordinate:F3},{point.LateralDeviation:F3},{point.HValue:F3}");
+                                    $"{point.XCoordinate:F3},{point.LateralDeviation:F3},{point.HValue:F3}," +
+                                    $"{fpiValue:F3},{ucsValue:F3}");
             }
             
             string filePath = Path.Combine(OutputPath, "trajectory_calculated.csv");
             File.WriteAllText(filePath, csvContent.ToString());
             LogMessage($"轨迹计算结果已保存: {filePath}");
+            
+            // 同时保存轨迹点与FPI关联的专用文件
+            SaveTrajectoryWithFPIValues();
+        }
+
+        /// <summary>
+        /// 保存轨迹点坐标与FPI值关联的专用CSV文件
+        /// </summary>
+        private void SaveTrajectoryWithFPIValues()
+        {
+            var csvContent = new System.Text.StringBuilder();
+            csvContent.AppendLine("序号,X坐标,Y坐标,Z坐标,深度,倾角,方位角,FPI,UCS,标记时间戳");
+            
+            for (int i = 0; i < trajectoryPoints.Count; i++)
+            {
+                var point = trajectoryPoints[i];
+                
+                // 查找对应的FPI和UCS值
+                var depthRange = 0.5f;
+                var correspondingData = filteredData
+                    .Where(d => Math.Abs(d.Depth - point.RodLength) <= depthRange && 
+                               !float.IsNaN(d.Fpi) && !float.IsNaN(d.Ucs))
+                    .OrderBy(d => Math.Abs(d.Depth - point.RodLength))
+                    .FirstOrDefault();
+                
+                // 如果没找到精确匹配，扩大搜索范围
+                if (correspondingData == null)
+                {
+                    correspondingData = filteredData
+                        .Where(d => !float.IsNaN(d.Fpi) && !float.IsNaN(d.Ucs))
+                        .OrderBy(d => Math.Abs(d.Depth - point.RodLength))
+                        .FirstOrDefault();
+                }
+                
+                float fpiValue = correspondingData?.Fpi ?? float.NaN;
+                float ucsValue = correspondingData?.Ucs ?? float.NaN;
+                
+                csvContent.AppendLine($"{i + 1},{point.EastDisplacement:F3},{point.NorthDisplacement:F3}," +
+                                    $"{-point.VerticalDepth:F3},{point.RodLength:F2}," +
+                                    $"{point.Inclination:F3},{point.Azimuth:F3}," +
+                                    $"{fpiValue:F3},{ucsValue:F3}," +
+                                    $"\"{point.MarkTimestamp:yyyy-MM-dd HH:mm:ss}\"");
+            }
+            
+            string filePath = Path.Combine(OutputPath, "trajectory_points_with_fpi.csv");
+            File.WriteAllText(filePath, csvContent.ToString());
+            LogMessage($"轨迹点坐标与FPI关联文件已保存: {filePath}");
         }
 
         private void SaveMarkData()
